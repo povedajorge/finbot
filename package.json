@@ -1,0 +1,22 @@
+{
+  "name": "expense-demo",
+  "version": "1.0.0",
+  "description": "Demo local de gestión de gastos con WhatsApp + Panel VIP",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.21.0",
+    "@whiskeysockets/baileys": "^6.5.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "pino": "^9.3.2",
+    "pino-pretty": "^11.2.1",
+    "qrcode": "^1.5.4",
+    "ws": "^8.18.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

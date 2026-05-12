@@ -30,12 +30,16 @@ Reglas:
 - line_items debe ser siempre un array (vacío si no hay ítems).
 - No inventes datos. Solo extrae lo visible en la imagen.`
 
-async function processTransactionImage(buffer, mimeType) {
+async function processTransactionImage(buffer, mimeType, caption = '') {
   const base64 = buffer.toString('base64')
   const safeMime = ['image/jpeg', 'image/png', 'image/webp'].includes(mimeType) ? mimeType : 'image/jpeg'
 
+  const captionHint = caption
+    ? `\n\nNOTA IMPORTANTE: El usuario acompañó esta imagen con el texto: "${caption}". Si contiene palabras como "ingreso", "venta", "cobro", "consignación" → type debe ser "ingreso". Si contiene "egreso", "gasto", "pago", "compra" → type debe ser "egreso". Esta indicación del usuario tiene PRIORIDAD sobre tu interpretación visual.`
+    : ''
+
   const result = await model.generateContent([
-    EXTRACTION_PROMPT,
+    EXTRACTION_PROMPT + captionHint,
     { inlineData: { data: base64, mimeType: safeMime } }
   ])
 
@@ -49,8 +53,14 @@ async function processTransactionImage(buffer, mimeType) {
     throw new Error(`Gemini devolvió respuesta no parseable: ${text.slice(0, 200)}`)
   }
 
+  // Caption override: if user explicitly wrote ingreso/egreso, respect it
+  const captionLower = caption.toLowerCase()
+  let resolvedType = parsed.type === 'ingreso' ? 'ingreso' : 'egreso'
+  if (/\b(ingreso|ingresos|venta|cobro|consignaci[oó]n|recib[ií])\b/.test(captionLower)) resolvedType = 'ingreso'
+  if (/\b(egreso|egresos|gasto|pago|compra|factura)\b/.test(captionLower)) resolvedType = 'egreso'
+
   return {
-    type:       parsed.type === 'ingreso' ? 'ingreso' : 'egreso',
+    type:       resolvedType,
     category:   typeof parsed.category === 'string' ? parsed.category : 'Otro',
     date:       parsed.date ?? null,
     provider:   parsed.provider ?? null,

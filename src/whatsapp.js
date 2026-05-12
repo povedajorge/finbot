@@ -87,9 +87,10 @@ async function initWhatsApp(broadcast) {
         try {
           const buffer = await downloadMediaMessage(msg, 'buffer', {})
           const mimeType = imageMsg.mimetype || 'image/jpeg'
+          const caption = (imageMsg.caption || '').trim()
 
-          console.log('  [Gemini] Procesando imagen...')
-          const txData = await processTransactionImage(buffer, mimeType)
+          console.log(`  [Gemini] Procesando imagen${caption ? ` (caption: "${caption}")` : ''}...`)
+          const txData = await processTransactionImage(buffer, mimeType, caption)
           console.log(`  [Gemini] ${txData.type.toUpperCase()} — ${txData.provider} — ${txData.amount} ${txData.currency}`)
 
           const saved = db.insertTransaction({ ...txData, sender_jid: jid, imageBuffer: buffer, imageMime: mimeType })

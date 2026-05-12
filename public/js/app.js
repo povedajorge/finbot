@@ -1,6 +1,6 @@
 'use strict'
 
-const WS_URL = `ws://${location.host}`
+const WS_URL = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}`
 let socket
 let allTransactions = []
 let months6 = []

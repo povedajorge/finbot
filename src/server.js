@@ -3,8 +3,7 @@
 require('dotenv').config()
 
 if (!process.env.GEMINI_API_KEY) {
-  console.error('\n[ERROR] GEMINI_API_KEY no configurada en .env\n')
-  process.exit(1)
+  console.warn('\n[WARN] GEMINI_API_KEY no configurada — el procesamiento de imágenes no funcionará\n')
 }
 
 const http = require('http')
@@ -16,6 +15,8 @@ const { initWhatsApp } = require('./whatsapp')
 const { generateFinancialReport } = require('./gemini')
 
 const PORT = parseInt(process.env.PORT || '3000', 10)
+
+let waConnected = false
 
 const app = express()
 app.use(express.json())
@@ -47,6 +48,15 @@ app.get('/api/stats/period', (req, res) => {
   const { start, end } = req.query
   if (!start || !end) return res.status(400).json({ error: 'start y end requeridos' })
   res.json(db.getPeriodStats(start, end))
+})
+
+app.get('/api/status', (_req, res) => {
+  res.json({
+    ok: true,
+    whatsapp: waConnected,
+    gemini: !!process.env.GEMINI_API_KEY,
+    uptime: Math.floor(process.uptime())
+  })
 })
 
 app.post('/api/report', async (req, res) => {
@@ -100,6 +110,8 @@ wss.on('connection', (ws) => {
 })
 
 function broadcast(type, data) {
+  if (type === 'connected') waConnected = true
+  if (type === 'status' && data?.connected === false) waConnected = false
   const payload = JSON.stringify({ type, data })
   for (const client of clients) {
     if (client.readyState === WebSocket.OPEN) {
